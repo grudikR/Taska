@@ -42,8 +42,8 @@ class MealController extends Controller
         $dinner = $request->input('dinnerItems');
 
         $meals = MenuMaker::createMenuFromInputs($meals);
-        $dinner_arr = explode(",", $dinner);
-        $dinner_arr = array_map('trim', $dinner_arr);
+        $dinner_arr_from_input = explode(",", $dinner);
+        $dinner_arr_from_input = array_map('trim', $dinner_arr_from_input);
         /*
                 $ttt = collect();
                 foreach ($meals as $it) {
@@ -56,13 +56,22 @@ class MealController extends Controller
         $min_id = 'none';
 
         $list_of_restourant = array_keys($meals);
+        /*dd($meals);*/
+
         foreach ($list_of_restourant as $restourant_id) {
-            $a = array_fill_keys($dinner_arr, PHP_INT_MAX);
+            /*$a = array_fill_keys($dinner_arr_from_input, PHP_INT_MAX);*/
+            $a = array();
+            foreach ($dinner_arr_from_input as $input){
+                $a[$input]['price'] = PHP_INT_MAX;
+                $a[$input]['guid'] = 0;
+            }
+
             $one_restourant = $meals[$restourant_id];
             /*var_dump($dinner_arr);
             var_dump($a);
             echo "<br/>";*/
             foreach ($one_restourant as $restourant_item) {
+                $proposition_guid = uniqid();
                 foreach ($restourant_item->GetItemsArray() as $one_restourant_pos) {
                     /*
                     echo "<br/>";
@@ -74,15 +83,22 @@ class MealController extends Controller
 
                     echo "<br/>";
                     */
-                    if (array_key_exists($one_restourant_pos, $a) && $restourant_item->GetPrice() < $a[$one_restourant_pos])
+                    /*var_dump($a);*/
+                    if (array_key_exists($one_restourant_pos, $a) && $restourant_item->GetPrice() < $a[$one_restourant_pos]['price'])
                     {
-                        $a[$one_restourant_pos] = $restourant_item->GetPrice();
+                        if (!in_array($proposition_guid, array_column($a,'guid'))) {
+                            $a[$one_restourant_pos]['price'] = $restourant_item->GetPrice();
+                            $a[$one_restourant_pos]['guid'] = $proposition_guid;
+                        }
+                        else{
+                            $a[$one_restourant_pos]['price'] = 0;
+                        }
                     }
                 }
 
                 if (count(array_keys($a, PHP_INT_MAX)) == 0)
                 {
-                    $suma = array_sum($a);
+                    $suma = array_sum(array_column($a,'price'));
 
                     if ($suma < $min_price)
                     {
