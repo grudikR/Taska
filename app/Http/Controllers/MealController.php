@@ -59,11 +59,12 @@ class MealController extends Controller
         foreach ($list_of_restourant as $restourant_id) {
             $a = array_fill_keys($dinner_arr, PHP_INT_MAX);
             $one_restourant = $meals[$restourant_id];
-            var_dump($dinner_arr);
+            /*var_dump($dinner_arr);
             var_dump($a);
-            echo "<br/>";
+            echo "<br/>";*/
             foreach ($one_restourant as $restourant_item) {
                 foreach ($restourant_item->GetItemsArray() as $one_restourant_pos) {
+                    /*
                     echo "<br/>";
                     var_dump($one_restourant_pos);
                     if (array_key_exists($one_restourant_pos, $a))
@@ -72,7 +73,7 @@ class MealController extends Controller
                         echo "NO";
 
                     echo "<br/>";
-
+                    */
                     if (array_key_exists($one_restourant_pos, $a) && $restourant_item->GetPrice() < $a[$one_restourant_pos])
                     {
                         $a[$one_restourant_pos] = $restourant_item->GetPrice();
