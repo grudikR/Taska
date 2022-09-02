@@ -63,18 +63,21 @@ class MenuMaker
         }
         return $result;
     }
+
     public static function menuSortArray($meals = []): array
     {
         $sortedMealsByRestaurant = [];
         foreach ($meals as $mealKey => $item) {
+
+            $sortedMealsByRestaurant[$item[0]][$mealKey][0] = $item[0];
+            $sortedMealsByRestaurant[$item[0]][$mealKey][1] = $item[1];
+
             foreach ($item as $key => $val) {
                 if (is_null($val)) {
                     unset($meals[$mealKey][$key]);
                     continue;
                 }
                 if ($key > 1) {
-                    $sortedMealsByRestaurant[$item[0]][$mealKey][0] = $item[0];
-                    $sortedMealsByRestaurant[$item[0]][$mealKey][1] = $item[1];
                     $sortedMealsByRestaurant[$item[0]][$mealKey]['items'][] = $val;
                     unset($meals[$mealKey][$key]);
                 }
