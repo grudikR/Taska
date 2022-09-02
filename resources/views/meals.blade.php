@@ -14,13 +14,13 @@
             <h5 class="card-title font-weight-bold">Output</h5>
         </div>
         <div class="card-body">
-            @if (!is_null($min_price))
+            @if ($min_price != PHP_INT_MAX)
                 Restaurant: {{$min_id}}
             @else
                 Restaurant: none
             @endif
             <br/>
-            @if (!is_null($min_price))
+            @if ($min_price!= PHP_INT_MAX)
                 Total cost: {{$min_price}}
             @endif
         </div>

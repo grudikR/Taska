@@ -14,10 +14,10 @@ class MenuMaker
 
             if (array_key_exists($reatourantID, $restourantMenu)) {
                 $dishes = $restourantMenu[$reatourantID];
-                array_push($restourantMenu[$reatourantID], $meal);
+                $restourantMenu[$reatourantID][] = $meal;
             } else {
                 $dishes = array();
-                array_push($dishes, $meal);
+                $dishes[] = $meal;
                 $restourantMenu[$reatourantID] = $dishes;
             }
         }
@@ -43,5 +43,92 @@ class MenuMaker
             }
         }
         return $m;
+    }
+
+    public static function getAllPermutations($array = []): array
+    {
+        if (empty($array)) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach ($array as $key => $value) {
+            unset($array[$key]);
+            $subPermutations = self::getAllPermutations($array);
+            $result[] = [$key => $value];
+            foreach ($subPermutations as $sub) {
+                $result[] = array_merge([$key => $value], $sub);
+            }
+        }
+        return $result;
+    }
+    public static function MenuSortArray($meals = []): array
+    {
+        $sortedMealsByRestaurant = [];
+        foreach ($meals as $mealKey => $item) {
+            foreach ($item as $key => $val) {
+                if (is_null($val)) {
+                    unset($meals[$mealKey][$key]);
+                    continue;
+                }
+                if ($key > 1) {
+                    $sortedMealsByRestaurant[$item[0]][$mealKey][0] = $item[0];
+                    $sortedMealsByRestaurant[$item[0]][$mealKey][1] = $item[1];
+                    $sortedMealsByRestaurant[$item[0]][$mealKey]['items'][] = $val;
+                    unset($meals[$mealKey][$key]);
+                }
+            }
+        }
+        return $sortedMealsByRestaurant;
+    }
+    public static function GetMinimumPricesArray($sortedMealsByRestaurant = [], $dinner_arr_from_input = []){
+        $minimumPrices = [];
+        foreach ($sortedMealsByRestaurant as $restaurantId => $meals) {
+            $minSum = PHP_INT_MAX;
+            foreach (MenuMaker::getAllPermutations($meals) as $row) {
+                $items = [];
+                foreach ($row as $meal) {
+                    $items = array_merge($items, $meal['items']);
+                }
+                $items = array_unique($items);
+                $currentSum = array_sum(array_column($row, '1'));
+                $diff = array_diff($dinner_arr_from_input, $items);
+                if ($minSum != PHP_INT_MAX && empty($diff)) {
+                    $minSum = array_sum(array_column($row, '1'));
+                }
+
+                if ($currentSum < $minSum && empty($diff)) {
+                    $minSum = $currentSum;
+                }
+            }
+            $minimumPrices[$restaurantId] = $minSum;
+        }
+        return $minimumPrices;
+    }
+
+    public static function SearchBestPriceFromPossible($minimumPrices =[]): array
+    {
+        $foundedMinPrice = PHP_INT_MAX;
+        $foundedRestaurantId = PHP_INT_MAX;
+        foreach ($minimumPrices as $restaurantId => $minimumPrice) {
+            if ($foundedMinPrice == PHP_INT_MAX && $foundedRestaurantId == PHP_INT_MAX) {
+                $foundedMinPrice = $minimumPrice;
+                $foundedRestaurantId = $restaurantId;
+            }
+            if ($minimumPrice < $foundedMinPrice && $minimumPrice) {
+                $foundedMinPrice = $minimumPrice;
+                $foundedRestaurantId = $restaurantId;
+            }
+        }
+        return [$foundedMinPrice, $foundedRestaurantId];
+    }
+
+    public static function RemoveSpaces($items =[]): array
+    {
+        $items = array_map(function ($item) {
+            return array_map('trim', $item);
+        }, $items);
+        return $items;
     }
 }
