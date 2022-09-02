@@ -63,7 +63,7 @@ class MenuMaker
         }
         return $result;
     }
-    public static function MenuSortArray($meals = []): array
+    public static function menuSortArray($meals = []): array
     {
         $sortedMealsByRestaurant = [];
         foreach ($meals as $mealKey => $item) {
@@ -82,7 +82,8 @@ class MenuMaker
         }
         return $sortedMealsByRestaurant;
     }
-    public static function GetMinimumPricesArray($sortedMealsByRestaurant = [], $dinner_arr_from_input = []){
+    public static function getMinimumPricesArray($sortedMealsByRestaurant = [], $dinner_arr_from_input = []): array
+    {
         $minimumPrices = [];
         foreach ($sortedMealsByRestaurant as $restaurantId => $meals) {
             $minSum = PHP_INT_MAX;
@@ -94,11 +95,13 @@ class MenuMaker
                 $items = array_unique($items);
                 $currentSum = array_sum(array_column($row, '1'));
                 $diff = array_diff($dinner_arr_from_input, $items);
-                if ($minSum != PHP_INT_MAX && empty($diff)) {
+                if (!empty($diff)) {
+                    continue;
+                }
+                if ($minSum == PHP_INT_MAX) {
                     $minSum = array_sum(array_column($row, '1'));
                 }
-
-                if ($currentSum < $minSum && empty($diff)) {
+                if ($currentSum < $minSum) {
                     $minSum = $currentSum;
                 }
             }
@@ -107,7 +110,7 @@ class MenuMaker
         return $minimumPrices;
     }
 
-    public static function SearchBestPriceFromPossible($minimumPrices =[]): array
+    public static function searchBestPriceFromPossible($minimumPrices =[]): array
     {
         $foundedMinPrice = PHP_INT_MAX;
         $foundedRestaurantId = PHP_INT_MAX;
@@ -124,7 +127,7 @@ class MenuMaker
         return [$foundedMinPrice, $foundedRestaurantId];
     }
 
-    public static function RemoveSpaces($items =[]): array
+    public static function removeSpaces($items =[]): array
     {
         $items = array_map(function ($item) {
             return array_map('trim', $item);

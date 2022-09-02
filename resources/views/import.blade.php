@@ -28,7 +28,7 @@
                     @endif
 
                     <div class="card-header">
-                        <h5 class="card-title font-weight-bold">Import CSV</h5>
+                        <h5 class="card-title font-weight-bold">The CSV file containing the list of restaurant item prices</h5>
                     </div>
 
                     <div class="card-body">
@@ -46,7 +46,7 @@
                     </div>
 
                     <div class="card-footer">
-                        <button type="submit" class="btn btn-primary">Upload File</button>
+                        <button type="submit" class="btn btn-primary">Get restaurant we should go to</button>
                     </div>
                 </div>
             </form>

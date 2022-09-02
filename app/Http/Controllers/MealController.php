@@ -47,17 +47,13 @@ class MealController extends Controller
         }
 
         $meals = Excel::toArray(new MealsImport(), $request->file('csvfile'))[0];
-        $meals = MenuMaker::RemoveSpaces($meals);
-
         $dinner = $request->input('dinnerItems');
+        $meals = MenuMaker::removeSpaces($meals);
 
-        $dinner_arr_from_input = explode(",", $dinner);
-        $dinner_arr_from_input = array_map('trim', $dinner_arr_from_input);
+        $dinner_arr_from_input = array_map('trim', explode(",", $dinner));
 
-
-        $sortedMealsByRestaurant = MenuMaker::MenuSortArray($meals);
-        $minimumPrices = MenuMaker::GetMinimumPricesArray($sortedMealsByRestaurant, $dinner_arr_from_input);
-        $foundedRes = MenuMaker::SearchBestPriceFromPossible($minimumPrices);
+        $minimumPrices = MenuMaker::getMinimumPricesArray(MenuMaker::menuSortArray($meals), $dinner_arr_from_input);
+        $foundedRes = MenuMaker::searchBestPriceFromPossible($minimumPrices);
 
         return view('meals')
             ->with('min_price', $foundedRes[0])
