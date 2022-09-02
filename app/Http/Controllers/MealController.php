@@ -31,6 +31,25 @@ class MealController extends Controller
         return view('import');
     }
 
+    function getAllPermutations($array = [])
+    {
+        if (empty($array)) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach ($array as $key => $value) {
+            unset($array[$key]);
+            $subPermutations = $this->getAllPermutations($array);
+            $result[] = [$key => $value];
+            foreach ($subPermutations as $sub) {
+                $result[] = array_merge([$key => $value], $sub);
+            }
+        }
+        return $result;
+    }
+
     /**
      * Import User data through sheet
      *
@@ -38,79 +57,76 @@ class MealController extends Controller
      */
     public function import(Request $request)
     {
+        if(!$request->filled('dinnerItems')){
+            return redirect()->back()->with('failed', 'No dinner items input!');
+        }
+
+        if (!$request->file('csvfile')) {
+            return redirect()->back()->with('failed', 'No file input!');
+        }
+
         $meals = Excel::toArray(new MealsImport(), $request->file('csvfile'))[0];
         $dinner = $request->input('dinnerItems');
-
-        $meals = MenuMaker::createMenuFromInputs($meals);
+        $meals = array_map(function ($item) {
+            return array_map('trim', $item);
+        }, $meals);
+        /*$meals = MenuMaker::createMenuFromInputs($meals);*/
         $dinner_arr_from_input = explode(",", $dinner);
         $dinner_arr_from_input = array_map('trim', $dinner_arr_from_input);
-        /*
-                $ttt = collect();
-                foreach ($meals as $it) {
-                    $tmp_ob = new Meal($it[0], $it[1], explode(",", trim($it[2])));
-                    $ttt->push($tmp_ob);
-                }
-                $meals = $ttt;
-        */
+
         $min_price = PHP_INT_MAX;
         $min_id = 'none';
-
-        $list_of_restourant = array_keys($meals);
-        /*dd($meals);*/
-
-        foreach ($list_of_restourant as $restourant_id) {
-            /*$a = array_fill_keys($dinner_arr_from_input, PHP_INT_MAX);*/
-            $a = array();
-            foreach ($dinner_arr_from_input as $input){
-                $a[$input]['price'] = PHP_INT_MAX;
-                $a[$input]['guid'] = 0;
+        $sortedMealsByRestaurant = [];
+        foreach ($meals as $mealKey => $item) {
+            foreach ($item as $key => $val) {
+                if (is_null($val)) {
+                    unset($meals[$mealKey][$key]);
+                    continue;
+                }
+                if ($key > 1) {
+                    $sortedMealsByRestaurant[$item[0]][$mealKey][0] = $item[0];
+                    $sortedMealsByRestaurant[$item[0]][$mealKey][1] = $item[1];
+                    $sortedMealsByRestaurant[$item[0]][$mealKey]['items'][] = $val;
+                    unset($meals[$mealKey][$key]);
+                }
             }
-
-            $one_restourant = $meals[$restourant_id];
-            /*var_dump($dinner_arr);
-            var_dump($a);
-            echo "<br/>";*/
-            foreach ($one_restourant as $restourant_item) {
-                $proposition_guid = uniqid();
-                foreach ($restourant_item->GetItemsArray() as $one_restourant_pos) {
-                    /*
-                    echo "<br/>";
-                    var_dump($one_restourant_pos);
-                    if (array_key_exists($one_restourant_pos, $a))
-                        echo "YES";
-                    else
-                        echo "NO";
-
-                    echo "<br/>";
-                    */
-                    /*var_dump($a);*/
-                    if (array_key_exists($one_restourant_pos, $a) && $restourant_item->GetPrice() < $a[$one_restourant_pos]['price'])
-                    {
-                        if (!in_array($proposition_guid, array_column($a,'guid'))) {
-                            $a[$one_restourant_pos]['price'] = $restourant_item->GetPrice();
-                            $a[$one_restourant_pos]['guid'] = $proposition_guid;
-                        }
-                        else{
-                            $a[$one_restourant_pos]['price'] = 0;
-                        }
-                    }
+        }
+        $minimumPrices = [];
+        foreach ($sortedMealsByRestaurant as $restaurantId => $meals) {
+            $minSum = null;
+            foreach ($this->getAllPermutations($meals) as $row) {
+                $items = [];
+                foreach ($row as $meal) {
+                    $items = array_merge($items, $meal['items']);
+                }
+                $items = array_unique($items);
+                $currentSum = array_sum(array_column($row, '1'));
+                $diff = array_diff($dinner_arr_from_input, $items);
+                if (is_null($minSum) && empty($diff)) {
+                    $minSum = array_sum(array_column($row, '1'));
                 }
 
-                if (count(array_keys($a, PHP_INT_MAX)) == 0)
-                {
-                    $suma = array_sum(array_column($a,'price'));
-
-                    if ($suma < $min_price)
-                    {
-                        $min_price = $suma;
-                        $min_id = $restourant_item->GetId();
-                    }
+                if ($currentSum < $minSum && empty($diff)) {
+                    $minSum = $currentSum;
                 }
+            }
+            $minimumPrices[$restaurantId] = $minSum;
+        }
+        $foundedMinPrice = null;
+        $foundedRestaurantId = null;
+        foreach ($minimumPrices as $restaurantId => $minimumPrice) {
+            if (is_null($foundedMinPrice) && is_null($foundedRestaurantId)) {
+                $foundedMinPrice = $minimumPrice;
+                $foundedRestaurantId = $restaurantId;
+            }
+            if ($minimumPrice < $foundedMinPrice && $minimumPrice) {
+                $foundedMinPrice = $minimumPrice;
+                $foundedRestaurantId = $restaurantId;
             }
         }
 
         return view('meals')
-            ->with('min_price', $min_price)
-            ->with('min_id', $min_id);
+            ->with('min_price', $foundedMinPrice)
+            ->with('min_id', $foundedRestaurantId);
     }
 }
